@@ -95,14 +95,18 @@ def gather_missing_work_history(work_history):
 def gather_specific_work_history(base_resume, job_description):
   # Given a base resume and a specific job description, gather any additional information that might help make the resume better tailored to the job description. Update the base_resume with the new information.
 
-# LLM LOIC
+# LLM LOGIC
 def distill_work_history(work_history):
   # Given a work history, distill down to the salient points in a "base resume" in JSON form to make rendering easier
+
+def generate_missing_work_history_request(base_resume, job_description):
+  # Given a linkedin work history, distill down to a structured format and generate a list of questions to prompt the user for more information to create a more complete base resume with required fields like activities, skills, and measurable impact.
+  # Note that you may want to code some more complex logic here to enter into and come out of holes based on user responses. An example is if you ask for impact the user had, but they don't give you something measurable, prompt until you get the info you need.
 
 def generate_specific_work_history_request(base_resume, job_description):
   # Given a base resume and a job description, generate a list of questions to prompt the user for more information in order to better tailor their resume for the role.
 
-def generate_final_resume(base_resume,)
+def generate_final_resume(base_resume, job_description)
 
 
 def main():
