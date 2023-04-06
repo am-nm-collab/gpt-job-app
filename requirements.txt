@@ -1,3 +1,6 @@
 openai==0.27.3
 python-dotenv==1.0.0
 langchain==0.0.132
+typer==0.7.0
+rich==13.0.1
+validators==0.20.0
