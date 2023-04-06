@@ -7,11 +7,13 @@ from langchain.schema import (
 from langchain.llms import OpenAI
 from langchain.chat_models import ChatOpenAI
 from langchain.output_parsers import PydanticOutputParser, OutputFixingParser
+from langchain.document_loaders import UnstructuredURLLoader
 from pydantic import BaseModel, Field, validator
 from typing import List
 from dotenv import load_dotenv
 import json
 import os
+import validators
 
 # CONFIG
 load_dotenv()
@@ -117,7 +119,7 @@ def save_linkedin_work_history(linkedin_url: str = "") -> None:
         "position": {
           "id": "987654",
           "title": "Software Engineer",
-          "description": "Responsible for developing and maintaining web applications using modern web technologies."
+          "description": "Responsible for developing and maintaining web applications using modern web technologies. Cut latency in half and delivered solution for half the projected cost"
         },
         "location": "San Francisco, California, United States",
         "start_date": "2018-06-01",
@@ -132,7 +134,7 @@ def save_linkedin_work_history(linkedin_url: str = "") -> None:
         "position": {
           "id": "876543",
           "title": "Senior Software Engineer",
-          "description": "Led a team of software engineers to build scalable and reliable software solutions."
+          "description": "Led a team of software engineers to build scalable and reliable software solutions. Grew team to 10 engineers and delivered 3x the value in half the time."
         },
         "location": "New York, New York, United States",
         "start_date": "2021-09-01",
@@ -193,8 +195,28 @@ def generate_specific_work_history_request(base_resume: dict, job_description: s
   # Given a base resume and a job description, generate a list of questions to prompt the user for more information in order to better tailor their resume for the role.
   return None
 
-def generate_final_resume(base_resume: dict, job_description: str) -> str:
+def generate_final_resume(job_description: str) -> dict:
   # Given a base resume and a job description, generate a final resume that is tailored to the job description. This is the final product that will be presented to the user.
+  work_history = get_work_history()
+  if validators.url(job_description):
+    urls = [job_description]
+    loader = UnstructuredURLLoader(urls=urls)
+    job_description = loader.load()
+
+  prompt = PromptTemplate(
+    template = "The following JSON represents a candidate's work experience, including activities, skills, and measurable impact at each job:\n{work_history}\nGiven the candidates experience, construct a list of resume points for each job they have had that is specifically tailored to this job description:\n{job_description}\n. In addition to the list of resume points for each job, give a brief assessment of whether or not the candidate is a good fit for the role.",
+    input_variables = ["work_history", "job_description"],
+    partial_variables = {}
+  )
+  input = prompt.format_prompt(work_history=work_history, job_description=job_description)
+  messages = [
+    SystemMessage(content=system_message),
+    HumanMessage(content=input.to_string())
+  ]
+  output = chat(messages).content
+  return output
+
+
   return None
 
 # COMMANDLINE LOGIC
@@ -211,10 +233,17 @@ def gather_specific_work_history(base_resume: dict, job_description: str) -> Non
 def main():
 
   # POC FLOW
-  linkedin_url = "https://www.linkedin.com/in/username/"
-  save_linkedin_work_history(linkedin_url)
-  work_history = get_work_history()
-  generate_base_resume(work_history)
+
+  # Get work history from linkedin, create a base resume, and save it to the DB
+  #linkedin_url = "https://www.linkedin.com/in/username/"
+  #save_linkedin_work_history(linkedin_url)
+  #work_history = get_work_history()
+  #generate_base_resume(work_history)
+
+  # Get a job posting (copy paste or url) and combine it with the base resume to generate a final resume
+  job_description = "https://www.linkedin.com/jobs/view/3533892617"
+  output = generate_final_resume(job_description)
+  print(output)
 
 
   # STARTING FLOW
