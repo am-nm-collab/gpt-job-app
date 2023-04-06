@@ -232,21 +232,25 @@ def gather_specific_work_history(base_resume: dict, job_description: str) -> Non
 # MAIN LOGIC
 def main():
 
-  # POC FLOW
+  # POC FLOW GOES BELOW WHILE DEVELOPING THIS FILE
 
-  # Get work history from linkedin, create a base resume, and save it to the DB
-  #linkedin_url = "https://www.linkedin.com/in/username/"
-  #save_linkedin_work_history(linkedin_url)
-  #work_history = get_work_history()
-  #generate_base_resume(work_history)
+  # Get work history from linkedin, create a base resume, and save it to the DB. note the linkedin URL is fake, just a placeholder to illustrate.
+  linkedin_url = "https://www.linkedin.com/in/username/"
+  # Save the linkedin data to DB
+  save_linkedin_work_history(linkedin_url)
+  # Get the linkedin data from DB
+  work_history = get_work_history()
+  # Generate a base resume from the linkedin data. note this function stores the data in the DB
+  generate_base_resume(work_history)
 
   # Get a job posting (copy paste or url) and combine it with the base resume to generate a final resume
   job_description = "https://www.linkedin.com/jobs/view/3533892617"
+  # Generate a final resume from the base resume and the job description. Note this doesnt store in the DB yet, still under development. Ultimately this function will either both return a value and store the resume in the user_data, or it won't return a value and will only store the data in the user_data json.
   output = generate_final_resume(job_description)
   print(output)
 
 
-  # STARTING FLOW
+  # REAL APP FLOW GOES BELOW
 
   # Main flow of commandline requests
 
