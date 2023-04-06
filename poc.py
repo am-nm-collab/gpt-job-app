@@ -171,15 +171,11 @@ def generate_structured_role_description(role_description: List) -> dict:
   output = chat(messages).content
   try:
     parser.parse(output)
-    print("Output is valid")
     output = json.loads(output)
   except:
     new_parser = OutputFixingParser.from_llm(parser=parser, llm=chat)
     new_parser.parse(output)
-    print("Output had to be modified to be valid")
     output = json.loads(output)
-  print(output)
-  print(type(output))
   return output
 
 def generate_base_resume(work_history: dict) -> None:
