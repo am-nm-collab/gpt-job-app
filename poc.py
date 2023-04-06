@@ -21,6 +21,18 @@ OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 DB_OUTPUT_DIR = os.getenv('DB_OUTPUT_DIR').strip("/")
 chat = ChatOpenAI(model_name="gpt-3.5-turbo")
 system_message = "You are a career coach who helps people write great resumes that get noticed, so they can land their dream job."
+
+# CLASS DEFINITIONS
+
+class StructuredRoleDescription(BaseModel):
+    activities: List[str] = Field(description="List of activities the user performed in the role.")
+    skills: List[str] = Field(description="List of skills the user developed in the role.")
+    impact: List[str] = Field(description="List of measurable impact the user had in the role.")
+
+class TailoredRoleDescription(BaseModel):
+    resume_points: List[str] = Field(description="List of resume points for the role tailored to the provided job description.")
+    role_relevance: str = Field(description="Assessment of how well the user's experience in the role matches the job description.")
+
 # UTILS
 
 def pretty_print_resume(resume_json):
@@ -154,14 +166,10 @@ def save_linkedin_work_history(linkedin_url: str = "") -> None:
 
 def generate_structured_role_description(role_description: List) -> dict:
   # Given a description of an individual job, extract the salient points and return a structured format
-  class StructuredRoleDescription(BaseModel):
-    activities: List[str] = Field(description="List of activities the user performed in the role.")
-    skills: List[str] = Field(description="List of skills the user developed in the role.")
-    impact: List[str] = Field(description="List of measurable impact the user had in the role.")
 
   parser = PydanticOutputParser(pydantic_object=StructuredRoleDescription)
   prompt = PromptTemplate(
-    template = "Given the following description of what an employee did in a role, extract the activities performed, skills developed, and measurable impact the employee had. If any of those pieces of information is not avialable and clearly defined in the role description, leave the field empty.\n{format_instructions}.\nDo not return anything other than the structured JSON object in your response.\n{role_description}\n",
+    template = "Given the following description of what an employee did in a role, extract the activities performed, skills developed, and measurable impact the employee had. If any of those pieces of information is not avialable and clearly defined in the role description, leave the field empty.\n{format_instructions}.\nDo not return anything other than the raw JSON object in your response, and ensure that the response is not formatted with markdown. It should start and end with curly brackets.\n{role_description}\n",
     input_variables = ["role_description"],
     partial_variables = {"format_instructions": parser.get_format_instructions()}
   )
@@ -173,11 +181,15 @@ def generate_structured_role_description(role_description: List) -> dict:
   output = chat(messages).content
   try:
     parser.parse(output)
+    print(output)
     output = json.loads(output)
+    print("Success!")
   except:
     new_parser = OutputFixingParser.from_llm(parser=parser, llm=chat)
     new_parser.parse(output)
+    print(output)
     output = json.loads(output)
+    print("Success!")
   return output
 
 def generate_base_resume(work_history: dict) -> None:
@@ -195,29 +207,44 @@ def generate_specific_work_history_request(base_resume: dict, job_description: s
   # Given a base resume and a job description, generate a list of questions to prompt the user for more information in order to better tailor their resume for the role.
   return None
 
-def generate_final_resume(job_description: str) -> dict:
-  # Given a base resume and a job description, generate a final resume that is tailored to the job description. This is the final product that will be presented to the user.
-  work_history = get_work_history()
-  if validators.url(job_description):
-    urls = [job_description]
-    loader = UnstructuredURLLoader(urls=urls)
-    job_description = loader.load()
+def generate_tailored_role_description(structured_role_description: str, job_description: str) -> dict:
+  # Given a base resume and the text of a job description, generate a final resume that is tailored to the job description. This is the final product that will be presented to the user.
+
+  parser = PydanticOutputParser(pydantic_object=TailoredRoleDescription)
 
   prompt = PromptTemplate(
-    template = "The following JSON represents a candidate's work experience, including activities, skills, and measurable impact at each job:\n{work_history}\nGiven the candidates experience, construct a list of resume points for each job they have had that is specifically tailored to this job description:\n{job_description}\n. In addition to the list of resume points for each job, give a brief assessment of whether or not the candidate is a good fit for the role.",
-    input_variables = ["work_history", "job_description"],
-    partial_variables = {}
+    template = "The following JSON represents a candidate's work experience, including activities, skills, and measurable impact at a single past role:\n{structured_role_description}\nGiven the candidates experience, construct a list of resume points for this role and provide an assessment of whether or not the role experience is relevant to the job description.\nBe sure to tailor the list of resume points to this job description:\n{job_description}\n.{format_instructions}.\nDo not return anything other than the raw JSON object in your response, and ensure that the response is not formatted with markdown. It should start and end with curly brackets.\n",
+    input_variables = ["structured_role_description", "job_description"],
+    partial_variables = {"format_instructions": parser.get_format_instructions()}
   )
-  input = prompt.format_prompt(work_history=work_history, job_description=job_description)
+  input = prompt.format_prompt(structured_role_description=structured_role_description, job_description=job_description)
   messages = [
     SystemMessage(content=system_message),
     HumanMessage(content=input.to_string())
   ]
   output = chat(messages).content
+  try:
+    parser.parse(output)
+    output = json.loads(output)
+  except:
+    new_parser = OutputFixingParser.from_llm(parser=parser, llm=chat)
+    new_parser.parse(output)
+    output = json.loads(output)
+  print(output)
   return output
 
 
   return None
+
+def generate_tailored_resume(job_description: str) -> dict:
+  work_history = get_work_history()
+  if validators.url(job_description):
+    urls = [job_description]
+    loader = UnstructuredURLLoader(urls=urls)
+    job_description = loader.load()
+  for job in work_history:
+    job["position"]["app_data"]["tailored_role_description"] = generate_tailored_role_description(job["position"]["app_data"]["structured_role_description"], job_description)
+  set_work_history(work_history)
 
 # COMMANDLINE LOGIC
 
@@ -244,10 +271,10 @@ def main():
   generate_base_resume(work_history)
 
   # Get a job posting (copy paste or url) and combine it with the base resume to generate a final resume
-  job_description = "https://www.linkedin.com/jobs/view/3533892617"
+  job_description = "https://www.linkedin.com/jobs/view/3531114409"
   # Generate a final resume from the base resume and the job description. Note this doesnt store in the DB yet, still under development. Ultimately this function will either both return a value and store the resume in the user_data, or it won't return a value and will only store the data in the user_data json.
-  output = generate_final_resume(job_description)
-  print(output)
+
+  generate_tailored_resume(job_description)
 
 
   # REAL APP FLOW GOES BELOW
