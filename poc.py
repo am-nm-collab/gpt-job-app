@@ -20,7 +20,7 @@ load_dotenv()
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 DB_OUTPUT_DIR = os.getenv('DB_OUTPUT_DIR').strip("/")
 chat = ChatOpenAI(model_name="gpt-3.5-turbo")
-system_message = "You are a career coach who helps people write great resumes that get noticed, so they can land their dream job."
+system_message = "You are a career coach who helps people write great resumes that get noticed, so they can land their dream job. You are realistic and don't waste your clients time. You are direct and honest about a candidates chances at a job and tell them when you do not think their experience is a fit."
 
 # CLASS DEFINITIONS
 
@@ -31,7 +31,7 @@ class StructuredRoleDescription(BaseModel):
 
 class TailoredRoleDescription(BaseModel):
     resume_points: List[str] = Field(description="List of resume points for the role tailored to the provided job description.")
-    role_relevance: str = Field(description="Assessment of how well the user's experience in the role matches the job description.")
+    role_relevance: str = Field(description="Critical and realistic assessment of how well the user's experience in the role matches the job description.")
 
 # UTILS
 
@@ -271,9 +271,8 @@ def main():
   generate_base_resume(work_history)
 
   # Get a job posting (copy paste or url) and combine it with the base resume to generate a final resume
-  job_description = "https://www.linkedin.com/jobs/view/3531114409"
+  job_description = "https://careers.cargill.com/job/ilheus/quality-supervisor-food-safety-quality-and-regulatory-ilheus-ba/23251/46628292896"
   # Generate a final resume from the base resume and the job description. Note this doesnt store in the DB yet, still under development. Ultimately this function will either both return a value and store the resume in the user_data, or it won't return a value and will only store the data in the user_data json.
-
   generate_tailored_resume(job_description)
 
 
