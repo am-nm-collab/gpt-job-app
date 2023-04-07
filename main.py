@@ -22,7 +22,10 @@ import time
 # CONFIG
 load_dotenv()
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
-DB_OUTPUT_DIR = os.getenv('DB_OUTPUT_DIR').strip("/")
+# create directory if it doesn't exist
+DB_OUTPUT_DIR = 'db'
+if not os.path.exists(DB_OUTPUT_DIR):
+    os.makedirs(DB_OUTPUT_DIR)
 chat = ChatOpenAI(model_name="gpt-3.5-turbo")
 system_message = "You are a career coach who helps people write great resumes that get noticed, so they can land their dream job. You are realistic and don't waste your clients time. You are direct and honest about a candidates chances at a job and tell them when you do not think their experience is a fit."
 
@@ -107,6 +110,10 @@ def get_conversation_history() -> dict:
   # Load the entire conversation history from the DB.
   return read_json()['conversation_history']
 
+def get_linkedin_work_history() -> dict:
+  # Load the work history provided by the user from the DB
+  return read_json()['linkedin_work_history']
+
 def get_work_history() -> dict:
   # Load the work history provided by the user from the DB
   return read_json()['work_history']
@@ -125,7 +132,7 @@ def get_resume(resume_id: str) -> dict:
 def save_linkedin_work_history(linkedin_url: str = "") -> None:
   # Placeholder of dummy data until we get real API access to linkedin
   linkedin_work_history = {
-    "work_history": [
+    "linkedin_work_history": [
       {
         "company": {
           "id": "123456",
@@ -161,7 +168,7 @@ def save_linkedin_work_history(linkedin_url: str = "") -> None:
     ]
   }
   # We need to store our generated work history, user inputs, etc in the JSON file, and the best place to store it is in the work_history field returned by the linkedin API. So we need to do some prep to make sure we don't get errors for missing keys.
-  for job in linkedin_work_history["work_history"]:
+  for job in linkedin_work_history["linkedin_work_history"]:
     job["position"]["app_data"] = {}
     # We want to store all user inputs about the role now and in the future as list of strings. We copy the input from LinkedIn to get started.
     job["position"]["app_data"]["user_description_inputs"] = [job["position"]["description"]]
@@ -274,7 +281,7 @@ def main(linkedin_url: str = typer.Option(..., prompt="Enter the URL of your Lin
   # Save the linkedin data to DB
   save_linkedin_work_history(linkedin_url)
   # Get the linkedin data from DB
-  work_history = get_work_history()
+  work_history = get_linkedin_work_history()
   # Generate a base resume from the linkedin data. note this function stores the data in the DB
   #generate_base_resume(work_history)
   for job in work_history:
@@ -327,7 +334,7 @@ def main(linkedin_url: str = typer.Option(..., prompt="Enter the URL of your Lin
       generate_tailored_resume(job_description)
       progress.update(task, completed=1)
 
-  print("[yellow][bold]Resume complete. You can find your resume in the following directory: {OUTPUT_DIRECTORY}/user_data.json[/yellow][/bold]")
+  print("[yellow][bold]Resume complete. You can find your resume in the following directory: {DB_OUTPUT_DIR}/user_data.json[/yellow][/bold]")
 
 if __name__ == '__main__':
   typer.run(main)
