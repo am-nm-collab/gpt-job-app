@@ -1,4 +1,4 @@
-.env
 .python-version
-__pychache__
-db/
+__pycache__
+db
+.env
