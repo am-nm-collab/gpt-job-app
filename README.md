@@ -26,3 +26,8 @@ python main.py
 Then follow the prompts to get a resume generated for you. The resume output is currently JSON stored in {DB_OUTPUT_DIR}/user_data.json.
 
 To test out the interactive chat functionality, try uncommenting lines 137 and 154 and commenting out lines 138 and 155. This will create a back and forth to gather more data from the user about activities, skills, and impact that the bot can use to extract key points.
+
+# Limitations
+
+- Still working on finishing touches on storing the resume, right now it just dumps each description for each job into an ugly JSON, need to tweak that
+- The prompts could be much better.
