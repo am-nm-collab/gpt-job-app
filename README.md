@@ -1,6 +1,9 @@
 # gpt-job-app
 flask app that uses OpenAI's gpt api to help you write documents to help you get a job like resumes, cover letters, stories to tell in interviews.
 
+# NOTE
+- This is still under development, not ready for use yet. Key missing ingredient is LinkedIn API access. Stay tuned for updates.
+
 # How to run
 
 ## Install dependencies
@@ -29,5 +32,6 @@ To test out the interactive chat functionality, try uncommenting lines 137 and 1
 
 # Limitations
 
+- No linkedin API access, just using mock data. So won't really work for a linkedin profile.
 - Still working on finishing touches on storing the resume, right now it just dumps each description for each job into an ugly JSON, need to tweak that
 - The prompts could be much better.
